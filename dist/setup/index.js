@@ -71409,6 +71409,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const hc = __importStar(__nccwpck_require__(9925));
 const io = __importStar(__nccwpck_require__(7436));
 const tc = __importStar(__nccwpck_require__(7784));
+const exec = __importStar(__nccwpck_require__(1514));
 const path = __importStar(__nccwpck_require__(1017));
 const semver = __importStar(__nccwpck_require__(5911));
 const fs = __nccwpck_require__(7147);
@@ -71446,9 +71447,16 @@ function getNode(versionSpec, stable, checkLatest, auth, arch = os.arch()) {
         toolPath = tc.find('node', versionSpec, osArch);
         // If not found in cache, download
         if (toolPath) {
-            core.info(`Found in cache @ ${toolPath}`);
+            const { stdout: cachedVersion } = yield exec.getExecOutput(`"${toolPath}/bin/node"`, ['--version']);
+            if (!semver.satisfies(cachedVersion, versionSpec)) {
+                core.warning(`Expected ${versionSpec}. Found ${cachedVersion} in cache @ ${toolPath}`);
+                toolPath = '';
+            }
+            else {
+                core.info(`Found in cache @ ${toolPath}`);
+            }
         }
-        else {
+        if (!toolPath) {
             core.info(`Attempting to download ${versionSpec}...`);
             let downloadPath = '';
             let info = null;
